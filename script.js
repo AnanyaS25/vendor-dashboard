@@ -1,56 +1,42 @@
-const GOOGLE_SHEET_ID = "1YHJaJLyy8EuhaCrl0UpBz3uv3nm62YyP8WRdUTFKNzA"; 
-const SHEET_NAME = "Vendor Data"; 
-const API_KEY = "AIzaSyAtBVZvhYWRiuJmhVdkXlG50FU7vTie4YA"; // Replace with your new API Key
+const API_URL = "https://script.google.com/macros/s/AKfycbwhWXPIlprvPx1nOBNcqLYxn3gKnV0iMjamIcnv_N9JXtlXal3Xvw4oiGO6a7cgUzsdOw/exec";
 
-async function fetchSheetData() {
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${GOOGLE_SHEET_ID}/values/${SHEET_NAME}?key=${API_KEY}`;
+document.addEventListener("DOMContentLoaded", () => {
+    fetchVendorData();
+    document.getElementById("refreshData").addEventListener("click", fetchVendorData);
+});
 
-    const loadingMessage = document.getElementById("loading");
-    const errorMessage = document.getElementById("error");
-    const tableBody = document.querySelector("#vendorTable tbody");
-
+async function fetchVendorData() {
     try {
-        // Show loading message
-        loadingMessage.style.display = "block";
-        errorMessage.style.display = "none";
+        const response = await fetch(API_URL, {
+            method: "GET",
+            headers: { "Content-Type": "application/json" }
+        });
 
-        const response = await fetch(url);
         if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
+            throw new Error(`HTTP Error! Status: ${response.status}`);
         }
 
         const data = await response.json();
         console.log("Fetched Data:", data); // Debugging
 
-        if (!data.values) {
-            throw new Error("No data found in the sheet.");
-        }
-
-        populateTable(data.values);
+        updateVendorTable(data);
     } catch (error) {
-        console.error("Error fetching data:", error);
-        errorMessage.style.display = "block";
-    } finally {
-        loadingMessage.style.display = "none"; // Hide loading message after fetching
+        console.error("Error fetching vendor data:", error);
     }
 }
 
-function populateTable(data) {
-    const tableBody = document.querySelector("#vendorTable tbody");
-    tableBody.innerHTML = ""; // Clear existing data
+function updateVendorTable(vendors) {
+    const tableBody = document.getElementById("vendorTableBody");
+    tableBody.innerHTML = "";
 
-    data.forEach((row, rowIndex) => {
-        const tr = document.createElement("tr");
-
-        row.forEach(cell => {
-            const td = document.createElement("td");
-            td.textContent = cell;
-            tr.appendChild(td);
-        });
-
-        tableBody.appendChild(tr);
+    vendors.slice(1).forEach(vendor => { // Skip the first row (headers)
+        let row = `<tr>
+            <td>${vendor[0] || "N/A"}</td>  <!-- Vendor Name -->
+            <td>${vendor[1] || "N/A"}</td>  <!-- Final Score -->
+            <td>${vendor[2] || "N/A"}</td>  <!-- Final Rank -->
+            <td>${vendor[3] || "N/A"}</td>  <!-- Compliance -->
+        </tr>`;
+        tableBody.innerHTML += row;
     });
 }
 
-// Fetch data when the page loads
-document.addEventListener("DOMContentLoaded", fetchSheetData);
