@@ -1,99 +1,55 @@
-document.addEventListener("DOMContentLoaded", function () {
-    // Dark Mode Toggle
-    const darkModeToggle = document.getElementById("darkModeToggle");
-    if (darkModeToggle) {
-        darkModeToggle.addEventListener("click", function () {
-            document.body.classList.toggle("dark-mode");
-        });
-    } else {
-        console.error("Dark Mode Toggle button not found!");
-    }
+const GOOGLE_SHEET_ID = '1YHJaJLyy8EuhaCrl0UpBz3uv3nm62YyP8WRdUTFKNzA'; // Your actual Sheet ID
+const SHEET_NAME = 'Vendor Data'; // Your actual Sheet Name
+const API_KEY = 'AIzaSyBKH7XpxttQJOK-WUxyu7z7dVr7YF8ZXu0'; // Your actual API Key
 
-    // Fetch CSV Data Locally
-    fetchVendorData();
-});
+async function fetchSheetData() {
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${GOOGLE_SHEET_ID}/values/${SHEET_NAME}?key=${API_KEY}`;
 
-// ✅ Fetch from `vendors.csv` (Local File)
-async function fetchVendorData() {
     try {
-        const response = await fetch("vendors.csv"); // Local CSV file
+        const response = await fetch(url);
         if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
 
-        const csvText = await response.text();
-        const data = csvToArray(csvText);
-        console.log("Fetched Data:", data); // Debugging
-
-        // Populate table & chart
-        populateTable(data);
-        populateChart(data);
+        const data = await response.json();
+        processSheetData(data.values);
     } catch (error) {
-        console.error("Error fetching data:", error);
+        console.error('Error fetching data from Google Sheets:', error);
     }
 }
 
-// ✅ Convert CSV Text to Array
-function csvToArray(str, delimiter = ",") {
-    return str.trim().split("\n").map(row => row.split(delimiter));
+function processSheetData(values) {
+    if (!values || values.length === 0) {
+        console.error('No data found in the sheet.');
+        return;
+    }
+
+    const headers = values[0].map(header => header.trim().toLowerCase());
+    const vendorData = values.slice(1).map(row => {
+        let obj = {};
+        headers.forEach((header, index) => {
+            obj[header] = row[index] || ''; // Assign each row value to its respective column header
+        });
+        return obj;
+    });
+
+    console.log("Fetched Vendor Data:", vendorData); // Debugging
+    displayTable(vendorData);
 }
 
-// ✅ Populate Vendor Table
-function populateTable(data) {
-    const tableBody = document.querySelector("#vendorTable tbody");
-    if (!tableBody) {
-        console.error("Table body not found!");
-        return;
-    }
+function displayTable(data) {
+    const tableBody = document.querySelector('#vendorTable tbody');
+    tableBody.innerHTML = ''; // Clear existing data
 
-    tableBody.innerHTML = ""; // Clear previous data
-
-    if (data.length < 2) {
-        console.error("No valid data found in CSV");
-        return;
-    }
-
-    // Assuming first row is headers
-    for (let i = 1; i < data.length; i++) {
-        let row = document.createElement("tr");
+    data.forEach(vendor => {
+        const row = document.createElement('tr');
         row.innerHTML = `
-            <td>${data[i][0]}</td> <!-- Vendor Name -->
-            <td>${data[i][1]}</td> <!-- Final Score -->
-            <td>${data[i][2]}</td> <!-- Final Rank -->
-            <td>${data[i][3]}</td> <!-- Compliance -->
+            <td>${vendor['vendor name'] || 'N/A'}</td>
+            <td>${vendor['final score'] || 'N/A'}</td>
+            <td>${vendor['final rank'] || 'N/A'}</td>
+            <td>${vendor['compliance'] || 'N/A'}</td>
         `;
-
-        // Highlight performance issues
-        if (parseFloat(data[i][1]) < 70) row.style.backgroundColor = "#ffdddd"; // Red for low scores
-
         tableBody.appendChild(row);
-    }
-}
-
-// ✅ KPI Trend Chart using Chart.js
-function populateChart(data) {
-    const ctx = document.getElementById("kpiChart").getContext("2d");
-    if (!ctx) {
-        console.error("Chart container not found!");
-        return;
-    }
-
-    const vendorNames = data.slice(1).map(row => row[0]); // Vendor Names
-    const finalScores = data.slice(1).map(row => parseFloat(row[1])); // Final Scores
-
-    new Chart(ctx, {
-        type: "bar",
-        data: {
-            labels: vendorNames,
-            datasets: [{
-                label: "Final Score",
-                data: finalScores,
-                backgroundColor: "steelblue"
-            }]
-        },
-        options: {
-            responsive: true,
-            scales: {
-                y: { beginAtZero: true, max: 100 }
-            }
-        }
     });
 }
+
+// Call fetch function on page load
+document.addEventListener('DOMContentLoaded', fetchSheetData);
