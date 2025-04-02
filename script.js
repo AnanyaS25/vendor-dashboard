@@ -1,55 +1,83 @@
-const GOOGLE_SHEET_ID = '1YHJaJLyy8EuhaCrl0UpBz3uv3nm62YyP8WRdUTFKNzA'; // Your actual Sheet ID
-const SHEET_NAME = 'Vendor Data'; // Your actual Sheet Name
-const API_KEY = 'AIzaSyBKH7XpxttQJOK-WUxyu7z7dVr7YF8ZXu0'; // Your actual API Key
-
 async function fetchSheetData() {
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${GOOGLE_SHEET_ID}/values/${SHEET_NAME}?key=${API_KEY}`;
+    const url = "https://script.google.com/macros/s/AKfycbwhWXPIlprvPx1nOBNcqLYxn3gKnV0iMjamIcnv_N9JXtlXal3Xvw4oiGO6a7cgUzsdOw/exec";
 
     try {
         const response = await fetch(url);
-        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
 
         const data = await response.json();
-        processSheetData(data.values);
+        console.log("Fetched Data:", data); // Debugging: Check if data is received
+
+        updateTable(data);
     } catch (error) {
-        console.error('Error fetching data from Google Sheets:', error);
+        console.error("Error fetching data:", error);
     }
 }
 
-function processSheetData(values) {
-    if (!values || values.length === 0) {
-        console.error('No data found in the sheet.');
-        return;
-    }
+function updateTable(data) {
+    const tableBody = document.querySelector("#vendorTable tbody");
+    tableBody.innerHTML = ""; // Clear previous data
 
-    const headers = values[0].map(header => header.trim().toLowerCase());
-    const vendorData = values.slice(1).map(row => {
-        let obj = {};
-        headers.forEach((header, index) => {
-            obj[header] = row[index] || ''; // Assign each row value to its respective column header
-        });
-        return obj;
-    });
+    for (let i = 1; i < data.length; i++) {  // Skip header row
+        const row = document.createElement("tr");
 
-    console.log("Fetched Vendor Data:", vendorData); // Debugging
-    displayTable(vendorData);
-}
-
-function displayTable(data) {
-    const tableBody = document.querySelector('#vendorTable tbody');
-    tableBody.innerHTML = ''; // Clear existing data
-
-    data.forEach(vendor => {
-        const row = document.createElement('tr');
         row.innerHTML = `
-            <td>${vendor['vendor name'] || 'N/A'}</td>
-            <td>${vendor['final score'] || 'N/A'}</td>
-            <td>${vendor['final rank'] || 'N/A'}</td>
-            <td>${vendor['compliance'] || 'N/A'}</td>
+            <td>${data[i][0]}</td>  <!-- Vendor Name -->
+            <td>${data[i][1]}</td>  <!-- Final Score -->
+            <td>${data[i][2]}</td>  <!-- Final Rank -->
+            <td>${data[i][3]}</td>  <!-- Compliance -->
         `;
+
         tableBody.appendChild(row);
-    });
+    }
 }
 
-// Call fetch function on page load
-document.addEventListener('DOMContentLoaded', fetchSheetData);
+// Sorting Function
+function sortTable(columnIndex) {
+    const table = document.getElementById("vendorTable");
+    const rows = Array.from(table.rows).slice(1); // Ignore the header row
+
+    rows.sort((rowA, rowB) => {
+        const cellA = rowA.cells[columnIndex].textContent.trim();
+        const cellB = rowB.cells[columnIndex].textContent.trim();
+
+        return isNaN(cellA) ? cellA.localeCompare(cellB) : cellA - cellB;
+    });
+
+    rows.forEach(row => table.appendChild(row)); // Reattach rows in sorted order
+}
+
+// Dark Mode Toggle
+document.getElementById("darkModeToggle").addEventListener("click", () => {
+    document.body.classList.toggle("dark-mode");
+});
+
+// Refresh Data Button
+document.getElementById("refreshData").addEventListener("click", fetchSheetData);
+
+// Search Functionality
+document.getElementById("searchBox").addEventListener("input", function () {
+    const searchValue = this.value.toLowerCase();
+    const rows = document.querySelectorAll("#vendorTable tbody tr");
+
+    rows.forEach(row => {
+        const vendorName = row.cells[0].textContent.toLowerCase();
+        row.style.display = vendorName.includes(searchValue) ? "" : "none";
+    });
+});
+
+// Compliance Filter
+document.getElementById("filterCompliance").addEventListener("change", function () {
+    const selectedValue = this.value;
+    const rows = document.querySelectorAll("#vendorTable tbody tr");
+
+    rows.forEach(row => {
+        const compliance = row.cells[3].textContent;
+        row.style.display = (selectedValue === "all" || compliance === selectedValue) ? "" : "none";
+    });
+});
+
+// Load Data When Page Loads
+document.addEventListener("DOMContentLoaded", fetchSheetData);
