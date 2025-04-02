@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vendor Performance Dashboard</title>
+    <link rel="stylesheet" href="styles.css"> <!-- External CSS File -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Chart.js Library -->
+</head>
+<body>
+    <header>
+        <h1>Vendor Performance Dashboard</h1>
+        <p>Track and analyze vendor KPIs dynamically</p>
+        <button id="darkModeToggle">Toggle Dark Mode</button>
+    </header>
+    
+    <section class="controls">
+        <input type="text" id="searchBox" placeholder="Search Vendor...">
+        <select id="filterCompliance">
+            <option value="all">All Compliance</option>
+            <option value="BSCI">BSCI</option>
+            <option value="SMETA">SMETA</option>
+            <option value="WRAP">WRAP</option>
+            <option value="SA 8000">SA 8000</option>
+        </select>
+        <button id="refreshData">Refresh Data</button>
+    </section>
+    
+    <section class="table-container">
+        <h2>Vendor Performance Table</h2>
+        <p>Data fetched from vendors.csv</p>
+        <table id="vendorTable">
+            <thead>
+                <tr>
+                    <th onclick="sortTable(0)">Vendor Name</th>
+                    <th onclick="sortTable(1)">Final Score</th>
+                    <th onclick="sortTable(2)">Final Rank</th>
+                    <th>Compliance</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </section>
+    
+    <section class="chart-container">
+        <h2>KPI Performance Trends</h2>
+        <canvas id="kpiChart"></canvas>
+    </section>
+
+    <footer>
+        <p>Last Updated: <span id="lastUpdated">Loading...</span></p>
+    </footer>
+    
+    <script src="script.js"></script>
+</body>
+</html>
